@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: ["dev"]
+  pull_request:
+    branches: ["dev", "master"]
+  workflow_dispatch: # manual trigger
+
+env:
+  DOTNET_ARGS: >
+    -c Release
+    /p:CollectCoverage=true
+    /p:Threshold=80
+    /p:Include="[Flurl]*%2C[Flurl.Http]*%2C[Flurl.Http.Newtonsoft]*"
+    /p:Exclude="[*]*.GeneratedExtensions"
+
+jobs:
+  build-test-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Test
+        run: dotnet test --framework net6.0 $DOTNET_ARGS
+
+  build-test-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        framework: [net481, net461]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Test
+        run: dotnet test --framework ${{ matrix.framework }} $DOTNET_ARGS
